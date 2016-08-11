@@ -11,19 +11,20 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/namsResData', function (req, res, next) {
     
-    //setTimeout(function(){
+    setTimeout(function(){
     	var data = {
     		staticData: allData.staticData
     	}
     res.json(data);
-    //},10000);
+    },10000);
 
 });
 
-app.get('/namsResData/:reqId', function (req, res, next) {
+app.get('/namsResData/:id', function (req, res, next) {
     
     //setTimeout(function(){
         var data = {
+            id:req.params.id,
         	staticData:allData.staticData,
         	reqData:allData.reqData
         };

@@ -1,6 +1,6 @@
 var data = {
     //staticData is fixed / reository data
-    staticData: {        
+    staticData: {
         dropDownOptions: [
             {
                 id: 1,
@@ -80,37 +80,38 @@ var data = {
             }
         ]
     },
-    
+
     //data saved by user for later use. This is stored in a column of accesRequest table
     reqData:
     {
-        id:1,
+        id: 1,
         frsDatasets: [
-            { },
-            { },
+            { datasetId: 1 },
+            { datasetId: 2 },
             {
-                // id: 3,
-                // y14ResearchTypes: {
-                //     id: 1
-                // }, //these are asset ids
-                // y14Schedules: [
-                //     { id: 1 },
-                //     { id: 2 },
-                //     { id: 4 },
-                //     { id: 6 }
-                // ]
+                datasetId: 3,
+                y14Data: {
+                    y14ResearchTypes: {
+                        id: 1
+                    },
+                    y14Schedules: [
+                        { id: 1 },
+                        { id: 2 },
+                        { id: 4 },
+                        { id: 6 }]
+                }
             }
         ],
         frsCoAuthors: [
-            { loginName:'WCooler', name: 'Wrench Cooler', address: '5322 Otter Lane', termsOfUse: true, csiEligibility: false, dtccDataPolicy: true },
-            { loginName:'SMart', name: 'Shakia Mart', address: 'PSC 450 Box 297', termsOfUse: false, csiEligibility: false, dtccDataPolicy: true },
-            { loginName:'OLindell', name: 'Olene Lindell', address: '1807 Glenwood St. NE', termsOfUse: true, csiEligibility: true, dtccDataPolicy: false }
+            { loginName: 'WCooler', name: 'Wrench Cooler', address: '5322 Otter Lane', termsOfUse: true, csiEligibility: false, dtccDataPolicy: true },
+            { loginName: 'SMart', name: 'Shakia Mart', address: 'PSC 450 Box 297', termsOfUse: false, csiEligibility: false, dtccDataPolicy: true },
+            { loginName: 'OLindell', name: 'Olene Lindell', address: '1807 Glenwood St. NE', termsOfUse: true, csiEligibility: true, dtccDataPolicy: false }
         ],
         frsAnalysts: [
-            { loginName:'IRichmond', name: 'Ivor Richmond', address: '6762 33 Ave N', termsOfUse: true, csiEligibility: false, dtccDataPolicy: true },
-            { loginName:'FCollins', name: 'Fuller Collins', address: 'Middle of JiangNan Road', termsOfUse: true, csiEligibility: true, dtccDataPolicy: false },
-            { loginName:'DBush', name: 'Demetrius Bush', address: '74 Green Street', termsOfUse: false, csiEligibility: true, dtccDataPolicy: true },
-            { loginName:'VMarquez', name: 'Vance Marquez', address: '42-1 Motohakone Hakonemaci', termsOfUse: true, csiEligibility: false, dtccDataPolicy: true }
+            { loginName: 'IRichmond', name: 'Ivor Richmond', address: '6762 33 Ave N', termsOfUse: true, csiEligibility: false, dtccDataPolicy: true },
+            { loginName: 'FCollins', name: 'Fuller Collins', address: 'Middle of JiangNan Road', termsOfUse: true, csiEligibility: true, dtccDataPolicy: false },
+            { loginName: 'DBush', name: 'Demetrius Bush', address: '74 Green Street', termsOfUse: false, csiEligibility: true, dtccDataPolicy: true },
+            { loginName: 'VMarquez', name: 'Vance Marquez', address: '42-1 Motohakone Hakonemaci', termsOfUse: true, csiEligibility: false, dtccDataPolicy: true }
         ],
         nonFrsCoAuthors: [
             {

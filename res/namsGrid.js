@@ -4,7 +4,15 @@ define(['backbone', 'marionette', 'Handlebars', 'backgrid', 'bootstrap', 'typeah
 		var NamsGrid = {};
 		NamsGrid.namsChannel = Radio.channel('namsChannel');
 
-		var guId = function guId() {
+		// var guId = function guId() {
+		// 	function _p8(s) {
+		// 		var p = (Math.random().toString(16) + "000000000").substr(2, 8);
+		// 		return s ? "-" + p.substr(0, 4) + "-" + p.substr(4, 4) : p;
+		// 	}
+		// 	return _p8() + _p8(true) + _p8(true) + _p8();
+		// };
+
+		NamsGrid.guId = function guId() {
 			function _p8(s) {
 				var p = (Math.random().toString(16) + "000000000").substr(2, 8);
 				return s ? "-" + p.substr(0, 4) + "-" + p.substr(4, 4) : p;
@@ -204,7 +212,7 @@ define(['backbone', 'marionette', 'Handlebars', 'backgrid', 'bootstrap', 'typeah
 				}
 				this.addLabel = addLabel;
 
-				options.guId = guId();
+				options.guId = NamsGrid.guId();
 				this.collection.bind('add remove reset',
 					this.setRowCount
 					, this);
@@ -309,7 +317,12 @@ define(['backbone', 'marionette', 'Handlebars', 'backgrid', 'bootstrap', 'typeah
 			events: {
 				'click button': "addRow"
 			},
+			render:function(){
+				this.$el.html(this.template({label:this.options.addLabel || 'Add'}));
+				return(this);
+			},
 			initialize: function (options) {
+				NamsGrid.AddRowFooter.__super__.initialize.apply(this,arguments);
 				var addLabel = 'Add';
 				if (options.addLabel) {
 					addLabel = options.addLabel;

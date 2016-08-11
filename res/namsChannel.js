@@ -8,28 +8,16 @@ define(['radio', 'namsConstants', 'namsConfig'], function (Radio, NamsConstants,
         return (NamsChannel[prop]);
     }
 
-    NamsChannel.lazyLoad = function (reqId) {
+    NamsChannel.lazyLoad = function (reqId,callback) {
         var NamsResData = Backbone.Model.extend({
             url: function () {
-                //var reqId = NamsChannel.get('reqId');
                 return (reqId ? NamsConfig.urls.namsResData + '/' + reqId : NamsConfig.urls.namsResData);
             }
         });
         NamsChannel.namsResData = new NamsResData();
         NamsChannel.namsResData.fetch({
             success: function () {
-                NamsChannel.trigger('staticData:populated',
-                    function () {
-                        var frsDatasets = [{}];
-                        if (NamsChannel.namsResData.get('reqData')) {
-                            frsDatasets = NamsChannel.namsResData.get('reqData').frsDatasets;
-                        }
-                        if ((!frsDatasets) || (frsDatasets.length === 0)) {
-                            frsDatasets = [{}];
-                        }
-                        return (frsDatasets);
-                    }
-                );
+                NamsChannel.trigger('lazyLoad:success', NamsChannel.namsResData);
 
                 NamsChannel.trigger('staticData:dropDown:options',
                     NamsChannel.namsResData.get('staticData').dropDownOptions);
@@ -61,16 +49,35 @@ define(['radio', 'namsConstants', 'namsConfig'], function (Radio, NamsConstants,
                     }
                     return (nfCoAuthors);
                 })
+                callback();
             }
         });
     };
-
+    NamsChannel.reply('datasetDDOptions:get', function () {
+        var v = {
+            id: 0,
+            displayText: '--Select--'
+        };
+        var dropDownOptions = NamsChannel.namsResData.get('staticData').dropDownOptions;
+        return ([v].concat(dropDownOptions));
+    });
+    NamsChannel.reply('y14ResearchTypes:get:displayText', function (id) {
+        var allY14ResearchTypes = NamsChannel.namsResData.get('staticData').y14ResearchTypes;
+        y14ResearchTypes = _.findWhere(allY14ResearchTypes, { id: id });
+        return (y14ResearchTypes.displayText);
+    })
     NamsChannel.reply('y14ResearchTypes:get', function () {
         var y14ResearchTypes = null;
         if (NamsChannel.namsResData.get('staticData')) {
             y14ResearchTypes = NamsChannel.namsResData.get('staticData').y14ResearchTypes;
         }
         return (y14ResearchTypes);
+    });
+
+    NamsChannel.reply('y14Schedule:get:scheduleObject', function (id) {
+        var allY14Schedules = NamsChannel.namsResData.get('staticData').y14Schedules;
+        y14Schedule = _.findWhere(allY14Schedules, { id: id });
+        return (y14Schedule);
     });
 
     NamsChannel.reply('y14Schedules:get', function () {
@@ -82,14 +89,19 @@ define(['radio', 'namsConstants', 'namsConfig'], function (Radio, NamsConstants,
     });
 
     NamsChannel.reply('datasetObject:selected:get', function (id) {
-        var ddOptions = NamsChannel.namsResData.get('staticData').dropDownOptions;
-        var ddOption = _.find(ddOptions, function (item) {
-            return (item.id == (id / 1)); // id/1 returns integer
-        });
+        var ddOption = null;
+        var staticData = NamsChannel.namsResData.get('staticData');
+        if (staticData) {
+            var ddOptions = staticData.dropDownOptions;
+            ddOption = _.find(ddOptions, function (item) {
+                return (item.id == (id / 1)); // id/1 returns integer
+            });
+        }
+
         return (ddOption);
     });
 
-    NamsChannel.reply('frsDataset:dropdownOptions:get', function () {
+    NamsChannel.reply('dataset:dropdownOptions:get', function () {
         var ddOptions = NamsChannel.namsResData.get('staticData').dropDownOptions;
         return (ddOptions);
     });

@@ -14,9 +14,6 @@ define(['backbone', 'marionette', 'Handlebars', 'backgrid', 'bootstrap', 'typeah
 		var namsResModel = new NamsResModel();
 
 		var NamsResView = Marionette.LayoutView.extend({
-			initialize: function () {
-				console.log('namsResView initialized');
-			},
 			template: TemplatesCache.get('namsResTemplate'),
 			regions: {
 				rgResHeader: '#resHeader',
@@ -94,57 +91,31 @@ define(['backbone', 'marionette', 'Handlebars', 'backgrid', 'bootstrap', 'typeah
 		});
 
 		//-------------------------------------------------------------------------
-		//Requested Data and Storage
-		var ResRequestedDataStorageView = Marionette.LayoutView.extend({
-			template: TemplatesCache.get('resRequestedDataStorageTemplate'),
-			regions: {
-				rgFrsDatasets: '#frsDatasets'
-			},
-			onRender: function () {
-				frsDatasetsGrid = new NamsGrid.Grid({
-					className: '',
-					columns: frsDatasetColumns,
-					collection: frsDatasets,
-					footer: NamsGrid.AddRowFooter,
-					addLabel: 'Add Data Set',
-					emptyText: 'No Data'
-				});
-				this.rgFrsDatasets.show(frsDatasetsGrid);
-			}
-		});
+		//Requested Data and Storage		
 
 		//Model
-		var FrsDatasets = Backbone.Collection.extend({
-			// add:function(model){
-			// 	console.log('dataset added');
-			// 	Backbone.Collection.prototype.add.call(this, model);
-			// }
-		});
+		var FrsDatasets = Backbone.Collection.extend({});
 		var frsDatasets = new FrsDatasets();
-		NamsChannel.on('staticData:populated', function (newRows) {
-			frsDatasets.reset(newRows());
+		var frsDDOptions = {
+			id: 0,
+			displayText: '--Select--'
+		};;
+		NamsChannel.on('lazyLoad:success', function (namsResData) {
+			var reqData = namsResData.get('reqData');
+			var lzDatasets = reqData ? reqData.frsDatasets : [{}];
+			frsDatasets.reset(lzDatasets);
+			frsDDOptions = namsResData.get('staticData').dropDownOptions;
 		});
-
-
 
 		var FrsDatasetDropDownCell = Backgrid.Cell.extend({
+			//id:'',
 			initialize: function () {
 				FrsDatasetDropDownCell.__super__.initialize.apply(this, arguments);
 				this.column.currentModel = this.model;
 				this.column.datasetType = ''; //dtcc or y14 or else
 				//this.model.set('datasetId', 0, { silent: true }); //silent:true disables rerender when model changes.
 				var it = this;
-
-				NamsChannel.on('staticData:dropDown:options', function (dropDownOptions) {
-					var v = {
-						id: 0,
-						displayText: '--Select--',
-						owners: [],
-						classification: ''
-					};
-					it.column.dropDownOptions = [v].concat(dropDownOptions);
-					it.render();
-				});
+				this.column.set('dropDownOptions', NamsChannel.request('datasetDDOptions:get'));
 				NamsChannel.reply('cancel:clicked:command', function () {
 					it.column.currentModel.destroy();
 					if (it.column.datasetType === 'dtcc') {
@@ -176,7 +147,6 @@ define(['backbone', 'marionette', 'Handlebars', 'backgrid', 'bootstrap', 'typeah
 							};
 							it.column.currentModel.set('y14Data', y14Data);
 						}
-
 						_.defer(function () {
 							y14SchedulesGrid.clearSelectedModels();
 						});
@@ -184,17 +154,45 @@ define(['backbone', 'marionette', 'Handlebars', 'backgrid', 'bootstrap', 'typeah
 				});
 			},
 			render: function () {
-				this.$el.html(this.template({ data: this.column.dropDownOptions }));
+				var guId = NamsGrid.guId();
 				var it = this;
-				var id = this.model.get('datasetId');
-				//$('select[name="frsDatasetOptions"]').val(id);
+				this.$el.html(this.template(
+					{
+						data: this.column.get('dropDownOptions'),
+						id: guId
+					}));
+				var datasetId = this.model.get('datasetId') || 0;
+				$('#' + guId).val(datasetId);
+
+				_.defer(function () {
+					$('#' + guId).val(datasetId);
+				});
+
+				//populate other columns of grid
+				if (datasetId) {
+					var selectedObject = NamsChannel.request('datasetObject:selected:get', datasetId);
+					if (datasetId / 1 != 0) {
+						this.model.set('owners', selectedObject.owners.join('</br>'));
+						this.model.set('classification', selectedObject.classification);
+						if (selectedObject.displayText === NamsConstants.y14) {
+							var y14ResearchTypesId = this.model.get('y14Data').y14ResearchTypes.id;
+							var y14ResearchTypesDisplayText = NamsChannel.request('y14ResearchTypes:get:displayText', y14ResearchTypesId);
+							this.model.set('y14ResearchTypes', y14ResearchTypesDisplayText);
+							var y14SchedulesArray = this.model.get('y14Data').y14Schedules;
+							var y14Schedules = _.map(y14SchedulesArray, function (y14Schedule) {
+								var y14ScheduleObject = NamsChannel.request('y14Schedule:get:scheduleObject', y14Schedule.id);
+								//return (scheduleObject.get('schedule') + ' - ' + selectedModel.get('description'));
+							}).join('</br>');
+						}
+					}
+				}
 				this.delegateEvents();
 				return this;
 			},
 			isDtccExist: function () {
 				var dtccId = 0;
 				var ret = false;
-				var dtcc = this.column.dropDownOptions.find(function (d) {
+				var dtcc = this.column.get('dropDownOptions').find(function (d) {
 					return (d.displayText === NamsConstants.dtccSwap)
 				});
 				if (dtcc) {
@@ -218,8 +216,11 @@ define(['backbone', 'marionette', 'Handlebars', 'backgrid', 'bootstrap', 'typeah
 					var selectedText = $(e.target).find('option:selected').text().trim();
 
 					//prevent rows having same datasetId (duplicate rows)					
-					var existedModel = this.model.collection.findWhere({ datasetId: selectedValue });
-					if (existedModel) {
+					
+					var isExists = this.model.collection.any(function(item){
+							return(item.get('datasetId')/1 === selectedValue/1); //to convert to integer
+					});					
+					if (isExists) {
 						this.model.destroy();
 						return;
 					}
@@ -270,26 +271,18 @@ define(['backbone', 'marionette', 'Handlebars', 'backgrid', 'bootstrap', 'typeah
 				}
 			},
 			template: Handlebars.compile(`
-				<select name='frsDatasetOptions'>
+				<select name='frsDatasetOptions' id='{{id}}'>
 					{{#each data}}
-						<option data-text={{this.displayText}} value='{{this.id}}'>{{this.displayText}} </option> 
+						<option value='{{this.id}}'>{{this.displayText}} </option> 
 					{{/each}}
 				</select>				
 			`)
 		});
 
-		// var FrsDatasetOptions = Backgrid.SelectCell.extend({
-		// 	optionValues: function () {
-		// 		var optionsArray = [["Male", "1"], ["Female", "2"]];
-		// 		return (optionsArray);
-		// 	}
-		// });
-
-
 		var FrsDatasetDeleteCell = NamsGrid.DeleteCell.extend({
 			beforeDelete: function (coll) {
 				var dtccId = 0;
-				var ddOptions = NamsChannel.request('frsDataset:dropdownOptions:get');
+				var ddOptions = NamsChannel.request('dataset:dropdownOptions:get');
 				var dtcc = _.findWhere(ddOptions, { displayText: NamsConstants.dtccSwap });
 				if (dtcc) {
 					dtccId = dtcc.id;
@@ -303,22 +296,32 @@ define(['backbone', 'marionette', 'Handlebars', 'backgrid', 'bootstrap', 'typeah
 		});
 
 		var frsDatasetColumns =
-			[{ name: "datasetId", label: "Data Set", editable: "true", cell: FrsDatasetDropDownCell },
+			[{ name: "datasetId", label: "Data Set", cell: FrsDatasetDropDownCell },
 				{ name: "owners", sortable: false, label: "Owners", editable: "false", cell: "html" },
 				{ name: "classification", label: "Classification", editable: "false", cell: "html" },
 				{ name: "y14ResearchTypes", label: "Y-14 Research Types", editable: "false", cell: "html" },
 				{ name: "y14Schedules", label: "Y-14 Schedules", editable: "false", cell: "html" },
 				{ name: "delete", label: "Delete", cell: FrsDatasetDeleteCell },
 				{ name: "y14Data", label: "y14Data", editable: "false", cell: "string" }
-				// ,{ name: "gender", label: "Gender", cell: FrsDatasetOptions }
+				// ,{ name: "id", label: "Gender", cell: FrsDatasetOptions }
 			];
-		var frsDatasetsGrid = new NamsGrid.Grid({
-			className: '',
-			columns: frsDatasetColumns,
-			collection: frsDatasets,
-			footer: NamsGrid.AddRowFooter,
-			addLabel: 'Add Data Set',
-			emptyText: 'No Data'
+
+		var ResRequestedDataStorageView = Marionette.LayoutView.extend({
+			template: TemplatesCache.get('resRequestedDataStorageTemplate'),
+			regions: {
+				rgFrsDatasets: '#frsDatasets'
+			},
+			onRender: function () {
+				frsDatasetsGrid = new NamsGrid.Grid({
+					className: '',
+					columns: frsDatasetColumns,
+					collection: frsDatasets,
+					footer: NamsGrid.AddRowFooter,
+					addLabel: 'Add Data Set',
+					emptyText: 'No Data'
+				});
+				this.rgFrsDatasets.show(frsDatasetsGrid);
+			}
 		});
 
 		var DtccDataPolicyChildView = Backbone.View.extend(
